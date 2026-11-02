@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Misión: Guardianes de los Bienes Comunes • Concurso Universitario</title>
+  <meta name="description" content="Concurso interactivo y multijugador sobre el rol de la tecnología y la inteligencia artificial en la economía de los recursos naturales.">
+
+  <!-- Tipografía moderna Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- PeerJS para WebRTC P2P DataChannels entre dispositivos -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <!-- Hoja de estilos -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Canvas para animación de confeti en premiación -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Encabezado de la Aplicación -->
+  <header class="app-header">
+    <a href="#" class="brand" id="btn-brand-home">
+      <div class="brand-icon-wrapper">
+        <!-- Icono Hoja / Ecosistema + Red Tecnológica -->
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a9 9 0 0 1 9 9c0 4.97-4.03 9-9 9a9 9 0 0 1-9-9c0-4.97 4.03-9 9-9z"></path>
+          <path d="M12 6v6l4 2"></path>
+          <circle cx="12" cy="12" r="2.5"></circle>
+          <path d="M7 16l3-2"></path>
+          <path d="M17 8l-3 2"></path>
+        </svg>
+      </div>
+      <div class="brand-title">
+        <span class="main-txt">MISIÓN: GUARDIANES DE LOS BIENES COMUNES</span>
+        <span class="sub-txt" id="header-mode-txt">Tecnología, IA y Economía de Recursos Naturales</span>
+      </div>
+    </a>
+
+    <div class="header-controls">
+      <!-- Indicador de PIN de Sala -->
+      <div id="header-room-badge" class="score-badge" style="display: none; color: #74c69d;">
+        SALA: <span id="header-room-code" style="font-family: monospace; letter-spacing: 0.1em; margin-left: 0.25rem;">------</span>
+      </div>
+
+      <!-- Marcador de puntos en vivo -->
+      <div id="header-score-badge" class="score-badge" style="display: none; color: #f59e0b;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        <span id="header-score-val">0</span> pts
+      </div>
+
+      <!-- Botón de Acceso al Panel de Organizadores -->
+      <button id="btn-open-admin-login" class="btn-secondary" style="padding: 0.4rem 0.9rem; font-size: 0.85rem;" title="Acceso exclusivo organizadores">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Organizadores</span>
+      </button>
+
+      <!-- Botón de sonido (Mute / Unmute) -->
+      <button id="btn-mute" class="btn-icon" aria-label="Silenciar sonido" title="Silenciar sonido">
+        <span id="mute-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        </span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Modal para Selección de Modalidad -->
+  <div id="role-modal-overlay" class="role-modal-overlay">
+    <div class="role-modal-card">
+      <h3 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 0.5rem; color: #ffffff;">Misión: Guardianes de los Bienes Comunes</h3>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Selecciona cómo deseas ingresar al concurso en el aula:</p>
+
+      <div class="role-options-grid">
+        <button id="btn-choose-player" class="role-card-btn player">
+          <div class="role-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          </div>
+          <strong style="font-size: 1.15rem;">Unirme como Participante</strong>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Ingresar desde celular o computador para responder las 15 preguntas y competir.</span>
+        </button>
+
+        <button id="btn-choose-host" class="role-card-btn host">
+          <div class="role-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          </div>
+          <strong style="font-size: 1.15rem;">Panel de Organizadores (Proyector)</strong>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Proyectar código QR, controlar las rondas, verificar resultados y coronar al ganador.</span>
+        </button>
+      </div>
+
+      <div style="border-top: 1px solid var(--border-glass); padding-top: 1.25rem;">
+        <button id="btn-choose-solo" class="btn-secondary" style="font-size: 0.9rem; padding: 0.6rem 1.5rem;">
+          <span>Jugar en Modo Práctica Individual</span>
+        </button>
+        <button id="btn-close-role-modal" style="background: none; border: none; color: var(--text-dim); display: block; margin: 0.75rem auto 0; cursor: pointer; font-size: 0.85rem;">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Autenticación de Organizadores -->
+  <div id="admin-login-modal" class="role-modal-overlay">
+    <div class="role-modal-card" style="max-width: 440px;">
+      <div style="width: 54px; height: 54px; border-radius: var(--radius-sm); background: var(--forest-mid); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: #fff;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </div>
+      <h3 style="font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; color: #ffffff;">Panel Privado de Organizadores</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Ingresa la clave de administración para gestionar la sala y auditar resultados.</p>
+
+      <div id="admin-login-error" class="form-alert error" style="display: none;"></div>
+
+      <form id="form-admin-login" onsubmit="return false;">
+        <div class="form-group">
+          <label for="input-admin-pass">CONTRASEÑA DE ACCESO</label>
+          <input type="password" id="input-admin-pass" class="form-control-kahoot" placeholder="Contraseña..." required autocomplete="current-password" />
+          <small style="color: var(--text-dim); font-size: 0.75rem; display: block; margin-top: 4px;">Contraseña por defecto: <code>guardianes2026</code></small>
+        </div>
+        <button type="submit" id="btn-submit-admin-login" class="btn-primary-kahoot" style="width: 100%; margin-top: 0.5rem;">
+          <span>Entrar al Panel</span>
+        </button>
+      </form>
+
+      <button id="btn-close-admin-login" style="background: none; border: none; color: var(--text-dim); margin-top: 1.25rem; cursor: pointer; font-size: 0.85rem;">
+        Cancelar
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal de Vistas -->
+  <main class="main-container">
+
+    <!-- ======================================================================
+         1. PANTALLA DE INICIO (HOME)
+         ====================================================================== -->
+    <section id="screen-home" class="screen-view active">
+      <div class="hero-card">
+        <div class="hero-pill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+          Concurso Universitario Presencial • Aula de Clase
+        </div>
+
+        <h1 class="hero-title">MISIÓN: GUARDIANES DE LOS BIENES COMUNES</h1>
+        <h2 class="hero-subtitle">¿Estás preparado para demostrar cuánto aprendiste sobre tecnología, inteligencia artificial y economía ambiental?</h2>
+
+        <p class="hero-description">
+          Un desafío competitivo en tiempo real donde los estudiantes compiten desde sus celulares respondiendo 15 preguntas clave distribuidas en tres rondas estratégicas. Descubre cómo los satélites, drones, sensores IoT, la inteligencia artificial y las reglas de gobernanza transforman la protección de los recursos naturales.
+        </p>
+
+        <!-- Bloques temáticos de las 3 Rondas Oficiales -->
+        <div class="features-grid">
+          <div class="feature-item">
+            <div class="feature-icon ronda1">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            </div>
+            <div class="feature-text">
+              <h4>Ronda 1: Detectives Ambientales</h4>
+              <p>Monitoreo satelital Sentinel/Landsat, índice NDVI, drones multiespectrales, IoT y SIG.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon ronda2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div class="feature-text">
+              <h4>Ronda 2: Decisiones Inteligentes</h4>
+              <p>IA predictiva, mercados agrícolas, valoración de servicios ecosistémicos, Coase y Ostrom.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon ronda3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>
+            </div>
+            <div class="feature-text">
+              <h4>Ronda 3: Retos en el Territorio</h4>
+              <p>Altiplano de Nariño (heladas), vigilancia comunitaria, riego VRI y caso KoBold Metals.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción de Inicio -->
+        <div style="display: flex; justify-content: center; gap: 1.25rem; flex-wrap: wrap;">
+          <button id="btn-start" class="btn-primary-kahoot">
+            <span>¡Comenzar el desafío!</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         2. SALA DE ESPERA DEL ANFITRIÓN (PROYECTOR EN SALÓN)
+         ====================================================================== -->
+    <section id="screen-host-lobby" class="screen-view">
+      <div class="host-lobby-container">
+        
+        <!-- Panel Izquierdo: Código QR Gigante y Enlace -->
+        <div class="qr-panel">
+          <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 0.4rem; color: #ffffff;">Escanea para Participar</h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">Apunta la cámara de tu celular al código QR</p>
+          
+          <div id="qr-container" class="qr-code-box">
+            <!-- Renderizado dinámicamente con qrcode.min.js -->
+          </div>
+
+          <div class="room-pin-display">
+            <div class="room-pin-label">CÓDIGO DE SALA (PIN)</div>
+            <div id="host-pin-code" class="room-pin-code">------</div>
+          </div>
+
+          <button id="btn-copy-invite-link" class="btn-copy-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span>Copiar Enlace Directo</span>
+          </button>
+
+          <!-- Configuración de IP / URL para el proyector -->
+          <div class="url-config-bar">
+            <label for="input-base-url">URL base para el QR (IP local o pública):</label>
+            <div class="url-input-group">
+              <input type="text" id="input-base-url" placeholder="http://192.168.x.x:5500" />
+              <button id="btn-update-qr" title="Actualizar código QR">Actualizar</button>
+            </div>
+            <span style="font-size: 0.72rem; color: var(--text-dim);">Para estudiantes en la misma red WiFi, ingresa la IP local de tu computador o el dominio web.</span>
+          </div>
+        </div>
+
+        <!-- Panel Derecho: Lista de Participantes Conectados y Control -->
+        <div class="players-lobby-panel">
+          <div class="lobby-header-row">
+            <div>
+              <h2 style="font-size: 1.85rem; font-weight: 800; color: #ffffff;">Sala de Espera Presencial</h2>
+              <p style="color: var(--text-muted); font-size: 0.95rem;">Esperando a que los estudiantes se unan desde sus celulares...</p>
+            </div>
+            <div class="players-count-badge">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <span id="host-players-count">0</span> Estudiantes
+            </div>
+          </div>
+
+          <div id="host-players-grid" class="players-grid-lobby">
+            <div style="width: 100%; text-align: center; color: var(--text-dim); margin-top: 5rem;" id="lobby-empty-hint">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 0.75rem;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <p>Esperando participantes...<br>Proyecta el código QR o comparte el código PIN.</p>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <button id="btn-admin-view-results" class="btn-secondary" style="font-size: 0.9rem;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+              <span>Resultados y Clasificación</span>
+            </button>
+
+            <div style="display: flex; gap: 0.85rem;">
+              <button id="btn-cancel-lobby" class="btn-secondary">Cancelar</button>
+              <button id="btn-host-start-game" class="btn-primary-kahoot">
+                <span>Iniciar Misión (15 Preguntas)</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         3. PANTALLA DE INGRESO DEL PARTICIPANTE (CELULAR)
+         ====================================================================== -->
+    <section id="screen-player-join" class="screen-view">
+      <div class="player-join-card">
+        <div style="width: 60px; height: 60px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--forest-mid), var(--emerald-fresh)); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; color: #fff;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        </div>
+
+        <h2 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 0.5rem; color: #ffffff;">Ingreso al Concurso</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.75rem;">Escribe tu nombre o apodo para competir como Guardián de los Bienes Comunes.</p>
+
+        <div id="join-error-box" class="form-alert error"></div>
+
+        <form id="form-player-join" onsubmit="return false;">
+          <div class="form-group">
+            <label for="input-room-code">CÓDIGO PIN DE LA SALA</label>
+            <input type="text" id="input-room-code" class="form-control-kahoot" placeholder="Ej. GBC742" maxlength="8" required autocomplete="off" style="text-transform: uppercase;" />
+          </div>
+
+          <div class="form-group">
+            <label for="input-nickname">TU NOMBRE O APODO</label>
+            <input type="text" id="input-nickname" class="form-control-kahoot" placeholder="Ej. Carlos Nariño" maxlength="22" required autocomplete="off" />
+          </div>
+
+          <button type="submit" id="btn-submit-join" class="btn-primary-kahoot" style="width: 100%; margin-top: 1rem;">
+            <span>Entrar al Concurso</span>
+          </button>
+        </form>
+
+        <button id="btn-back-home-from-join" style="background: none; border: none; color: var(--text-dim); margin-top: 1.5rem; cursor: pointer; font-size: 0.9rem;">
+          Volver al Inicio
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         4. PANTALLA DE ESPERA DEL PARTICIPANTE (CELULAR)
+         ====================================================================== -->
+    <section id="screen-player-wait" class="screen-view">
+      <div class="player-wait-card">
+        <div class="radar-spinner"></div>
+
+        <h2 style="font-size: 1.85rem; font-weight: 800; margin-bottom: 0.5rem; color: #ffffff;">¡Conexión Exitosa!</h2>
+        <p style="color: #74c69d; font-weight: 800; font-size: 1.3rem; margin-bottom: 0.5rem;" id="player-wait-nick">---</p>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">Esperando a que los organizadores inicien la Misión en el salón...</p>
+
+        <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-glass); margin-bottom: 2rem;">
+          <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-dim); display: block;">Sala Asignada</span>
+          <span id="player-wait-room" style="font-size: 1.6rem; font-weight: 900; color: #74c69d; font-family: monospace;">------</span>
+          <div style="margin-top: 6px; font-size: 0.85rem; color: var(--text-muted);">Total conectados: <strong id="player-wait-count">1</strong> estudiantes</div>
+        </div>
+
+        <button id="btn-leave-room" class="btn-secondary" style="font-size: 0.9rem;">
+          <span>Salir de la sala</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         5. PANTALLA DEL CUESTIONARIO (QUIZ - ANFITRIÓN Y CELULARES)
+         ====================================================================== -->
+    <section id="screen-quiz" class="screen-view">
+      <div class="quiz-header">
+        <div class="quiz-top-info">
+          <div class="question-counter-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            <span id="q-counter">Pregunta 1 de 15</span>
+          </div>
+
+          <!-- Indicador de ronda temática -->
+          <span id="q-round-badge" class="round-badge">Ronda 1: Detectives Ambientales</span>
+
+          <!-- Indicador de respuestas recibidas para el proyector -->
+          <div id="host-answers-status" style="display: none; background: rgba(82, 183, 136, 0.2); border: 1px solid var(--emerald-fresh); padding: 0.25rem 0.8rem; border-radius: var(--radius-full); color: #74c69d; font-weight: 700; font-size: 0.85rem;">
+            🟢 <span id="host-answers-count">0</span> de <span id="host-total-players">0</span> respondieron
+          </div>
+        </div>
+
+        <!-- Barra de progreso global -->
+        <div class="progress-track" style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: var(--radius-full); overflow: hidden;">
+          <div id="progress-fill" style="height: 100%; width: 6.6%; background: linear-gradient(90deg, #2d6a4f, #52b788, #f59e0b); border-radius: var(--radius-full); transition: width 0.4s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Tarjeta central con la pregunta y el temporizador circular -->
+      <div class="question-card">
+        <div class="timer-container" aria-label="Tiempo restante">
+          <svg class="timer-svg" viewBox="0 0 90 90">
+            <circle class="timer-circle-bg" cx="45" cy="45" r="40" />
+            <circle id="timer-svg-progress" class="timer-circle-progress" cx="45" cy="45" r="40" />
+          </svg>
+          <div id="timer-number" class="timer-number">25</div>
+        </div>
+
+        <div class="question-text-wrapper">
+          <h3 id="question-text" class="question-title">Cargando pregunta...</h3>
+        </div>
+      </div>
+
+      <!-- RECURSO VISUAL ASOCIADO A LA PREGUNTA (FOTOGRAFÍA / DIAGRAMA TÉCNICO) -->
+      <div id="question-visual-box" class="question-visual-card">
+        <div class="visual-header">
+          <span id="visual-badge" class="visual-badge">Recurso Técnico</span>
+          <span id="visual-title" class="visual-title">Firma Espectral NDVI</span>
+        </div>
+        <div id="visual-content" class="visual-content-box">
+          <!-- Gráfico SVG o imagen inyectada dinámicamente -->
+        </div>
+        <div id="visual-caption" class="visual-caption">Descripción interpretativa del gráfico</div>
+      </div>
+
+      <!-- Cuadrícula de 4 Opciones de Respuesta -->
+      <div id="options-container" class="options-grid"></div>
+
+      <!-- Notificación de respuesta bloqueada en celular -->
+      <div id="player-submitted-notice" style="display: none; text-align: center; padding: 2rem 1.5rem; background: rgba(13, 35, 25, 0.95); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); margin-top: 1rem;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🌿</div>
+        <h3 style="font-size: 1.4rem; font-weight: 800; color: #74c69d; margin-bottom: 0.25rem;">¡Respuesta Registrada!</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Esperando a que termine el tiempo para revelar la explicación didáctica...</p>
+      </div>
+
+      <!-- Panel de Retroalimentación y Explicación Inmediata -->
+      <div id="feedback-box" class="feedback-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <div id="feedback-status" style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 800; color: #74c69d;">
+            <!-- Estado correcto/incorrecto -->
+          </div>
+          <div id="points-earned" class="points-earned-pill" style="padding: 0.35rem 1rem; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; border-radius: var(--radius-full); color: #f59e0b; font-weight: 800;">+0 pts</div>
+        </div>
+
+        <p id="feedback-explanation" class="feedback-explanation">Explicación didáctica basada en la evidencia científica.</p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem;">
+          <button id="btn-host-pause-toggle" class="btn-secondary" style="display: none; padding: 0.6rem 1.2rem; font-size: 0.85rem;">
+            <span>Pausar / Reanudar</span>
+          </button>
+          <button id="btn-next" class="btn-next-question" style="display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.85rem 2rem; font-size: 1.05rem; font-weight: 700; background: linear-gradient(135deg, var(--forest-mid), var(--emerald-fresh)); color: #fff; border: none; border-radius: var(--radius-full); cursor: pointer;">
+            <span>Siguiente</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         6. CLASIFICACIÓN PROVISIONAL EN TIEMPO REAL (LEADERBOARD)
+         ====================================================================== -->
+    <section id="screen-leaderboard" class="screen-view">
+      <div class="leaderboard-card" style="max-width: 780px; margin: 0 auto; background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 2.5rem 2rem; box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <div>
+            <h2 style="font-size: 2.1rem; font-weight: 900; color: #ffffff;">Tabla de Posiciones</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Clasificación en tiempo real tras la ronda</p>
+          </div>
+          <div class="score-badge" style="color: var(--solar-amber);">
+            Top Guardianes
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0 0.6rem;">
+          <thead>
+            <tr style="color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase;">
+              <th style="padding: 0.5rem 1.25rem; text-align: left;">Puesto</th>
+              <th style="padding: 0.5rem 1.25rem; text-align: left;">Participante</th>
+              <th style="padding: 0.5rem 1.25rem; text-align: right;">Puntos Acumulados</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-tbody"></tbody>
+        </table>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
+          <button id="btn-leaderboard-next" class="btn-primary-kahoot">
+            <span>Continuar el Concurso</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         7. PANTALLA DE PODIO Y GANADOR FINAL (PODIUM 3 NIVELES)
+         ====================================================================== -->
+    <section id="screen-podium" class="screen-view">
+      <div class="podium-section">
+        
+        <div class="hero-pill" style="margin-bottom: 1rem;">
+          🏆 Gran Final de la Misión
+        </div>
+        <h2 style="font-size: 2.85rem; font-weight: 900; margin-bottom: 0.5rem; background: linear-gradient(135deg, #fefae0 30%, #74c69d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          ¡Tenemos Ganador del Concurso!
+        </h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">
+          Felicitaciones a los tres mejores puestos y a todos los participantes por su compromiso con la gestión sostenible de los recursos naturales.
+        </p>
+
+        <!-- Escenario de Podio de 3 Niveles -->
+        <div class="podium-stage" id="podium-stage-container">
+          <!-- Renderizado dinámicamente con podio 1°, 2° y 3° -->
+        </div>
+
+        <!-- Tabla de Clasificación Completa -->
+        <div class="leaderboard-card" style="margin-top: 2.5rem; text-align: left; background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.4rem; font-weight: 800; color: #ffffff;">Clasificación General Completa</h3>
+            <button id="btn-podium-export-csv" class="btn-export-csv" style="padding: 0.5rem 1.25rem; font-size: 0.85rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Descargar CSV / Excel</span>
+            </button>
+          </div>
+
+          <div class="admin-table-container">
+            <table class="admin-results-table">
+              <thead>
+                <tr>
+                  <th>Puesto</th>
+                  <th>Participante</th>
+                  <th style="text-align: center;">Aciertos</th>
+                  <th style="text-align: center;">Tiempo Respuestas</th>
+                  <th style="text-align: right;">Puntos Totales</th>
+                </tr>
+              </thead>
+              <tbody id="podium-full-rank-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Botones de Acción de Premiación -->
+        <div class="results-buttons" style="margin-top: 2.5rem; display: flex; justify-content: center; gap: 1.25rem; flex-wrap: wrap;">
+          <button id="btn-podium-restart" class="btn-primary-kahoot">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            <span>Crear Nueva Sala</span>
+          </button>
+
+          <button id="btn-podium-review" class="btn-secondary">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            <span>Revisar las 15 Preguntas</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         8. SECCIÓN ESPECIAL: RESULTADOS Y CLASIFICACIÓN (PANEL PRIVADO)
+         ====================================================================== -->
+    <section id="screen-admin-panel" class="screen-view">
+      <div class="hero-card" style="text-align: left; padding: 2.5rem;">
+        <div class="admin-action-row">
+          <div>
+            <div class="hero-pill" style="margin-bottom: 0.5rem;">Panel Exclusivo de Organizadores</div>
+            <h2 style="font-size: 2.2rem; font-weight: 900; color: #ffffff;">RESULTADOS Y CLASIFICACIÓN</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">Auditoría en tiempo real de todos los participantes y descarga oficial.</p>
+          </div>
+          
+          <div style="display: flex; gap: 0.85rem; align-items: center;">
+            <button id="btn-admin-download-csv" class="btn-export-csv">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Descargar Resultados (CSV / Excel)</span>
+            </button>
+            <button id="btn-admin-return-room" class="btn-secondary">
+              Volver a la Sala
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem; color: var(--text-dim); font-size: 0.85rem;">
+          💡 <em>Haz clic en cualquier participante de la tabla para ver su auditoría individual (respuestas marcadas, tiempos y aciertos pregunta por pregunta).</em>
+        </div>
+
+        <div class="admin-table-container">
+          <table class="admin-results-table">
+            <thead>
+              <tr>
+                <th>Posición</th>
+                <th>Participante</th>
+                <th>Puntaje</th>
+                <th style="text-align: center;">Correctas</th>
+                <th style="text-align: center;">Incorrectas</th>
+                <th style="text-align: center;">Tiempo Total</th>
+                <th style="text-align: center;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="admin-results-tbody">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border-glass); padding-top: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            Sesión Administrativa Activa • Concurso Universitario
+          </div>
+          <button id="btn-admin-change-pass" class="btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 1rem;">
+            Cambiar Contraseña
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         9. PANTALLA DE RESULTADOS INDIVIDUALES (CELULAR O MODO SOLITARIO)
+         ====================================================================== -->
+    <section id="screen-results" class="screen-view">
+      <div class="results-card" style="background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); padding: 3rem 2.5rem; text-align: center; box-shadow: var(--shadow-lg);">
+        <div class="results-trophy-badge" style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 1.5rem; background: linear-gradient(135deg, #f59e0b, #fbbf24); display: flex; align-items: center; justify-content: center; color: #071711; box-shadow: 0 0 30px rgba(245, 158, 11, 0.4);">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+        </div>
+
+        <h2 style="font-size: 2.3rem; font-weight: 800; margin-bottom: 0.5rem; color: #ffffff;">Misión Concluida</h2>
+        
+        <div style="margin: 1.5rem 0 2rem;">
+          <div class="score-big-number" id="final-score" style="font-size: 4.2rem; font-weight: 900; background: linear-gradient(135deg, #fefae0 30%, #74c69d 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">0</div>
+          <div style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); font-weight: 700;">Puntos Totales Obtenidos</div>
+        </div>
+
+        <!-- Banner de desempeño personalizado -->
+        <div id="performance-banner" class="performance-banner excellent" style="background: rgba(82, 183, 136, 0.15); border: 1px solid rgba(82, 183, 136, 0.4); border-radius: var(--radius-md); padding: 1.25rem 1.75rem; max-width: 680px; margin: 0 auto 2.5rem;">
+          <p id="performance-text" style="font-size: 1.2rem; font-weight: 800; color: #d8f3dc;">Cargando evaluación...</p>
+        </div>
+
+        <!-- Estadísticas individuales -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2.5rem;">
+          <div class="stat-box" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 1.25rem 1rem;">
+            <div id="stat-correct" style="font-size: 2rem; font-weight: 900; color: #74c69d;">0</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Respuestas Correctas</div>
+          </div>
+          <div class="stat-box" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 1.25rem 1rem;">
+            <div id="stat-incorrect" style="font-size: 2rem; font-weight: 900; color: #f87171;">0</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Incorrectas / Tiempo</div>
+          </div>
+          <div class="stat-box" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 1.25rem 1rem;">
+            <div id="stat-accuracy" style="font-size: 2rem; font-weight: 900; color: #38bdf8;">0%</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Porcentaje de Aciertos</div>
+          </div>
+          <div class="stat-box" style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 1.25rem 1rem;">
+            <div id="stat-time" style="font-size: 2rem; font-weight: 900; color: #f59e0b;">0s</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">Tiempo Total</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 1.25rem; flex-wrap: wrap;">
+          <button id="btn-play-again" class="btn-primary-kahoot">
+            <span>Volver a Inicio</span>
+          </button>
+          <button id="btn-review" class="btn-secondary">
+            <span>Revisar las 15 Preguntas</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         10. PANTALLA DE REVISIÓN DIDÁCTICA COMPLETA
+         ====================================================================== -->
+    <section id="screen-review" class="screen-view">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 2rem; font-weight: 900; color: #ffffff;">Revisión Didáctica: 15 Preguntas</h2>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">Contenido pedagógico de la exposición universitaria</p>
+        </div>
+        <button id="btn-back-to-results" class="btn-secondary">
+          <span>Volver</span>
+        </button>
+      </div>
+
+      <div id="review-list" style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem;"></div>
+    </section>
+
+  </main>
+
+  <!-- Pie de Página Oficial -->
+  <footer class="app-footer">
+    <p>Proyecto Universitario • <strong>MISIÓN: GUARDIANES DE LOS BIENES COMUNES</strong> • Economía de los Recursos Naturales, Tecnología e IA</p>
+  </footer>
+
+  <!-- Scripts modulares -->
+  <script src="js/questions.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/qrcode.min.js"></script>
+  <script src="js/network.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/multiplayer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
